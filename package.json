@@ -1,0 +1,14 @@
+{
+  "name": "web-reader-mcp",
+  "version": "1.0.0",
+  "description": "웹 검색·웹페이지 읽기(HWP·HWPX 포함) MCP 서버 — 계정 커넥터와 업무 에이전트 중계 서버가 함께 쓴다",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cfb": "1.2.2",
+    "jszip": "3.10.1"
+  }
+}
