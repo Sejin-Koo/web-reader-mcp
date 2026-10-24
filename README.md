@@ -16,3 +16,4 @@
 | `WEB_SEARCH_DAILY`, `WEB_PAID_FETCH_DAILY`, `NIMBLE_MONTHLY_MAX` | 돈이 드는 경로의 한도(기본 사람별 하루 검색 60·대체 읽기 40, 서버 전체 월 Nimble 1000) |
 | `WEB_REPEAT_MAX`, `WEB_REPEAT_WINDOW_SEC` | 같은 주소·같은 위치 반복 허용(기본 10분에 5회) — 직접 읽기·HWP 읽기는 횟수로 세지 않고 이것만 본다 |
 | `WEB_BURST_PER_MIN`, `WEB_BURST_EXEMPT` | 사람별 1분 호출 상한(기본 60)과 제외 키 식별자(기본 `koo`) |
+| `WEB_DAILY_EXEMPT` | 사람별 하루 한도(검색·대체 읽기)를 적용하지 않는 키 식별자(기본 `koo`). 횟수는 그대로 세고, 서버 전체 월 Nimble 한도는 똑같이 적용된다 |
