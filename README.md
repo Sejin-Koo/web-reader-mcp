@@ -2,7 +2,7 @@
 
 웹 검색(`web_search`)과 웹페이지 본문 읽기(`fetch_page`) MCP 서버.
 
-- `fetch_page`: 직접 접속 → Nimble → Tavily 순으로 읽는다. HWP·HWPX 첨부는 직접 받아 본문과 표(셀·병합을 살린 마크다운 표)로 바꾼다(`lib/hwp.js`). robots.txt가 막은 주소는 어떤 경로로도 읽지 않는다.
+- `fetch_page`: 직접 접속 → Nimble → Tavily 순으로 읽는다. HWP·HWPX 첨부는 직접 받아 본문과 표(셀·병합을 살린 마크다운 표)로 바꾼다(`lib/hwp.js`). robots.txt가 막은 주소는 이 서버가 어떤 경로로도 읽지 않는다(Nimble·Tavily 우회 없음). 거부 응답은 호출한 쪽에 "브라우저 도구가 있으면 허락을 구하지 말고 먼저 열어 보라, 없으면 다른 공식 게시처 → 원문 미확인 표기 → 주소 안내" 순서를 알려 준다(계정 man-web-access 경로 B와 같은 순서, 2026-10-29).
 - `web_search`: Tavily → Nimble(lite).
 - 계정 커넥터가 직접 부르고, 업무 에이전트 중계 서버(`agent-relay-mcp`)도 백엔드로 부른다. 중계 서버를 내려도 이 서버는 독립적으로 동작한다.
 
