@@ -63,7 +63,7 @@ async function handleMessage(m, caller) {
         protocolVersion: SUPPORTED.includes(req) ? req : LATEST,
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
-        instructions: "웹 검색(web_search)과 웹페이지 본문 읽기(fetch_page) 서버입니다. fetch_page는 한글 문서(HWP·HWPX) 첨부 주소를 받으면 본문과 표를 글로 바꿔 줍니다. robots.txt가 막은 주소는 읽지 않습니다."
+        instructions: "웹 검색(web_search)과 웹페이지 본문 읽기(fetch_page) 서버입니다. fetch_page는 한글 문서(HWP·HWPX) 첨부 주소를 받으면 본문과 표를 글로 바꿔 줍니다. robots.txt가 막은 주소는 이 도구로 읽지 않으며, 브라우저 도구가 있으면 그 브라우저로 바로 열어 읽습니다(Nimble·Tavily·셸 우회 금지)."
       } });
     }
     case "ping":
