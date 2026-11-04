@@ -16,7 +16,7 @@ global.fetch = async (u, o) => {
   if (u.endsWith("/robots.txt")) return new Response("", { status: 404 });
   if (u.includes("nimbleway")) {
     const b = JSON.parse(o.body); bodies.push(b);
-    const md = b.browser_actions ? "연설 본문 ".repeat(200) : "메뉴";
+    const md = b.browser_actions ? "연설 본문 ".repeat(200) : (b.url.includes("ip_26") ? "" : "메뉴");
     return new Response(JSON.stringify({ status: "success", data: { markdown: md }, url: b.url }), { status: 200, headers: { "content-type": "application/json" } });
   }
   return new Response("<html><body><div id=app></div><script>x</script></body></html>", { status: 200, headers: { "content-type": "text/html" } });
@@ -26,7 +26,10 @@ let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(
 (async () => {
   const r = await web.call("fetch_page", { url: "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_2150" }, "tester");
   ok(bodies[0] && bodies[0].driver === "vx8" && bodies[0].render === true, "첫 호출: driver vx8 + render");
-  ok(bodies.length === 2 && bodies[1].browser_actions && bodies[1].browser_actions[0].wait === 3000, "얇으면 3초 기다려 한 번 더");
+  ok(bodies.length === 2 && bodies[1].browser_actions && bodies[1].browser_actions[0].wait === "5s", "얇으면 5초 기다려 한 번 더");
   ok(!r.isError && (r.structuredContent || {}).via === "nimble" && /연설 본문/.test(r.content[0].text), "두 번째 결과(본문)를 돌려줌");
+  bodies.length = 0;
+  const r2 = await web.call("fetch_page", { url: "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_1714" }, "tester");
+  ok(bodies.length === 2 && !r2.isError && (r2.structuredContent || {}).via === "nimble" && /연설 본문/.test(r2.content[0].text), "성공인데 빈 본문이면 실패로 던지지 않고 기다려 다시 읽음");
   console.log(`통과 ${pass} / 실패 ${fail}`); process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
