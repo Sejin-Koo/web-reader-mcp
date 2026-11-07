@@ -87,7 +87,15 @@ function grid(xs, ys, skipH) {
   r = await docs.fileToText(makePdf([p7]));
   ok(r.tableCheck.ok === 0 && r.tableCheck.failed.length === 1, "한 칸에 값 둘이 붙은 표는 확인 필요");
 
-  // 8) 쪽 그림
+  // 8) 밑줄형 표(칸마다 밑줄만, 세로선 없음) — 밑줄 틈을 열 경계로
+  const ul = (y) => [L(50, y, 150, y), L(155, y, 250, y), L(255, y, 350, y)];
+  const p8 = ["0.5 w"].concat(ul(690), ul(675), ul(660), ul(645))
+    .concat([T(55, 694, "Item"), T(200, 694, "2026"), T(300, 694, "2025"), T(55, 679, "Deliveries"), T(200, 679, "551,075"), T(300, 679, "588,140"),
+      T(55, 664, "EBIT margin"), T(200, 664, "3.4"), T(300, 664, "5.2"), T(55, 649, "Free cash flow"), T(200, 649, "-566"), T(300, 649, "343")]);
+  r = await docs.fileToText(makePdf([p8]));
+  ok(r.tableCheck.ok === 1 && /\| Item \| 2026 \| 2025 \|/.test(r.text) && /\| Free cash flow \| -566 \| 343 \|/.test(r.text), "밑줄형 표 복원(열 이름 줄 포함)");
+
+  // 9) 쪽 그림
   const img = await docs.renderPdfPages(makePdf([p1, p4]), [2, 9]);
   ok(img.total === 2 && img.images[0].png && img.images[0].png.subarray(1, 4).toString() === "PNG" && img.images[1].error, "pdf_pages: 쪽 그림(PNG)과 범위 밖 쪽 안내");
 
