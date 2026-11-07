@@ -1,0 +1,76 @@
+// PDF 표 칸 복원 스모크테스트(2026-11-07) — 손으로 만든 작은 PDF로 테두리 표·테두리 없는 하위 행·일부 테두리 표·쪽 그림을 확인.
+// 실행: node test/pdf-table.smoke.js
+const docs = require("../lib/docs");
+let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? "  OK  " : "  NG  ") + m); };
+
+// 아주 작은 PDF 만들기(Helvetica, 선·사각형·글자). 좌표는 PDF 단위(왼쪽 아래 원점)
+function makePdf(pages) {
+  const objs = [];
+  const add = s => { objs.push(s); return objs.length; };
+  const font = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  const pageIds = [];
+  const pagesId = objs.length + 1 + pages.length * 2; // 나중에 만들 Pages 번호
+  for (const ops of pages) {
+    const stream = ops.join("\n");
+    const c = add(`<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`);
+    pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${font} 0 R >> >> /Contents ${c} 0 R >>`));
+  }
+  const pid = add(`<< /Type /Pages /Kids [${pageIds.map(i => i + " 0 R").join(" ")}] /Count ${pageIds.length} >>`);
+  if (pid !== pagesId) throw new Error("pages id mismatch");
+  const cat = add(`<< /Type /Catalog /Pages ${pid} 0 R >>`);
+  let out = "%PDF-1.4\n"; const offs = [];
+  objs.forEach((o, i) => { offs.push(Buffer.byteLength(out)); out += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = Buffer.byteLength(out);
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map(o => String(o).padStart(10, "0") + " 00000 n \n").join("");
+  out += `trailer\n<< /Size ${objs.length + 1} /Root ${cat} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(out, "latin1");
+}
+const T = (x, y, s) => `BT /F1 10 Tf ${x} ${y} Td (${s}) Tj ET`;
+const L = (x1, y1, x2, y2) => `${x1} ${y1} m ${x2} ${y2} l S`;
+// 격자: xs·ys 위의 모든 선(빼고 싶은 칸 경계는 skip으로)
+function grid(xs, ys, skipH) {
+  const o = ["0.5 w"];
+  ys.forEach((y, i) => { if (!(skipH || []).includes(i)) o.push(L(xs[0], y, xs[xs.length - 1], y)); });
+  xs.forEach(x => o.push(L(x, ys[0], x, ys[ys.length - 1])));
+  return o;
+}
+
+(async () => {
+  // 1) 테두리 표 + 두 줄 칸(자동 줄넘김) — 한 행으로 묶여야
+  const p1 = grid([50, 150, 300, 450], [700, 680, 640, 620])
+    .concat([T(55, 686, "Item"), T(155, 686, "2025"), T(305, 686, "2026"),
+      T(55, 660, "Revenue"), T(55, 648, "(total)"), T(155, 654, "1,234"), T(305, 654, "1,500"),
+      T(55, 626, "Profit"), T(155, 626, "200"), T(305, 626, "310")]);
+  let r = await docs.fileToText(makePdf([p1]));
+  ok(/\| Item \| 2025 \| 2026 \|/.test(r.text) && /\| Revenue \(total\) \| 1,234 \| 1,500 \|/.test(r.text) && /\| Profit \| 200 \| 310 \|/.test(r.text) && r.tableCheck.ok === 1, "테두리 표 → 마크다운 표(두 줄 칸은 한 칸으로)");
+
+  // 2) 가로 테두리 없이 여러 행이 한 칸 줄에 든 일정표 — 같은 모양 시각으로 하위 행 분리
+  const p2 = grid([50, 150, 400], [700, 680, 600], [])
+    .concat([T(55, 686, "Time"), T(155, 686, "Program"),
+      T(55, 660, "10:00~10:10"), T(155, 660, "Opening"),
+      T(55, 640, "10:10~10:30"), T(155, 640, "Keynote"),
+      T(55, 620, "10:30~11:00"), T(155, 620, "Panel")]);
+  r = await docs.fileToText(makePdf([p2]));
+  ok(/\| 10:00~10:10 \| Opening \|/.test(r.text) && /\| 10:10~10:30 \| Keynote \|/.test(r.text) && /\| 10:30~11:00 \| Panel \|/.test(r.text), "테두리 없는 하위 행(같은 모양 시각) 분리");
+
+  // 3) 일부 열에만 세로선(항목 열은 선 없음) — 표로 내지 않고 [표 확인 필요]
+  const p3 = ["0.5 w", L(50, 700, 450, 700), L(50, 680, 450, 680), L(50, 660, 450, 660), L(50, 640, 450, 640), L(300, 700, 300, 640), L(380, 700, 380, 640), L(450, 700, 450, 640)]
+    .concat([T(55, 686, "Orders"), T(200, 686, "27,902"), T(250, 686, "24,719"), T(310, 686, "13%"), T(390, 686, "14%"),
+      T(55, 666, "Revenue"), T(200, 666, "20,794"), T(250, 666, "19,377"), T(310, 666, "7%"), T(390, 666, "8%"),
+      T(55, 646, "Profit"), T(200, 646, "3,524"), T(250, 646, "2,820"), T(310, 646, "25%")]);
+  r = await docs.fileToText(makePdf([p3])); 
+  ok(r.tableCheck.ok === 0 && r.tableCheck.failed.length >= 1 && r.text.includes("[표 확인 필요") && /Orders.*27,902/.test(r.text), "일부 열에만 테두리 → 표 확인 필요로 표시(항목명과 값은 같은 줄에 남김)");
+
+  // 4) 테두리 없는 숫자 표 — [표 확인 필요]
+  const p4 = [T(50, 700, "Sales"), T(250, 700, "100.5"), T(350, 700, "120.3"),
+    T(50, 685, "Cost"), T(250, 685, "60.1"), T(350, 685, "70.2"),
+    T(50, 670, "Margin"), T(250, 670, "40.4"), T(350, 670, "50.1")];
+  r = await docs.fileToText(makePdf([p4]));
+  ok(r.tableCheck.borderless.length >= 1 && r.text.includes("테두리 없는 표"), "테두리 없는 숫자 표 → 표 확인 필요로 표시");
+
+  // 5) 쪽 그림
+  const img = await docs.renderPdfPages(makePdf([p1, p4]), [2, 9]);
+  ok(img.total === 2 && img.images[0].png && img.images[0].png.subarray(1, 4).toString() === "PNG" && img.images[1].error, "pdf_pages: 쪽 그림(PNG)과 범위 밖 쪽 안내");
+
+  console.log(`통과 ${pass} / 실패 ${fail}`); process.exit(fail ? 1 : 0);
+})().catch(e => { console.error(e); process.exit(1); });
