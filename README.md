@@ -30,3 +30,13 @@
 | `WEB_REPEAT_MAX`, `WEB_REPEAT_WINDOW_SEC` | 같은 주소·같은 위치 반복 허용(기본 10분에 5회) — 직접 읽기·HWP 읽기는 횟수로 세지 않고 이것만 본다 |
 | `WEB_BURST_PER_MIN`, `WEB_BURST_EXEMPT` | 사람별 1분 호출 상한(기본 60)과 제외 키 식별자(기본 `koo`) |
 | `WEB_DAILY_EXEMPT` | 사람별 하루 한도(검색·대체 읽기)를 적용하지 않는 키 식별자(기본 `koo`). 횟수는 그대로 세고, 서버 전체 월 Nimble 한도는 똑같이 적용된다 |
+
+## 경로별 사용 기록 (2026-11-07)
+
+호출마다 누가(게이트키 식별자, 중계 서버 경유면 X-Relay-Caller) 어느 쪽에서(account = 계정 커넥터, agent = 업무 에이전트 중계 서버) 불렀는지와, 그중 유료 경로(Tavily search·extract, Nimble search·extract) 요청 수를 하루 단위로 센다. 질문·주소·본문은 남기지 않는다.
+
+- 키: `wu:<날짜>:callers`(집합), `wu:<날짜>:<caller>`(해시 — 필드 `<channel>|tool.<도구>`, `<channel>|tavily.search` 등, 실패는 `#err`)
+- 보관: `WEB_USAGE_RETENTION_DAYS`(기본 90일)
+- 조회: 업무 에이전트 중계 서버의 관리자 도구 `relay_usage`(group_by `web_paths`) — 같은 저장소를 읽는다
+- Nimble 브라우저 렌더 재시도(본문이 얇아 한 번 더)는 외부 요청 2건으로 센다(Nimble 과금 단위와 같음). 유료 본문 캐시로 답한 호출은 외부 요청으로 세지 않는다
+

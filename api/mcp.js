@@ -34,14 +34,14 @@ function callerOf(label, req) {
   return h || label;
 }
 
-async function callTool(params, caller) {
+async function callTool(params, caller, channel) {
   const name = params && params.name;
   if (!web.NAMES.includes(name)) {
     return { error: { code: -32602, message: `Unknown tool: ${name}` } };
   }
   const t0 = Date.now();
   try {
-    const result = await web.call(name, (params && params.arguments) || {}, caller);
+    const result = await web.call(name, (params && params.arguments) || {}, caller, channel);
     console.log(`[call] caller=${caller} tool=${name} ms=${Date.now() - t0} ok=${!result.isError}`);
     return { result };
   } catch (e) {
@@ -50,7 +50,7 @@ async function callTool(params, caller) {
   }
 }
 
-async function handleMessage(m, caller) {
+async function handleMessage(m, caller, channel) {
   const isNotification = m && m.id === undefined;
   const reply = (body) => (isNotification ? null : Object.assign({ jsonrpc: "2.0", id: m.id }, body));
   if (!m || m.jsonrpc !== "2.0" || typeof m.method !== "string") {
@@ -71,7 +71,7 @@ async function handleMessage(m, caller) {
     case "tools/list":
       return reply({ result: { tools: web.TOOLS } });
     case "tools/call":
-      return reply(await callTool(m.params, caller));
+      return reply(await callTool(m.params, caller, channel));
     default:
       if (isNotification) return null;
       return reply({ error: { code: -32601, message: `Method not found: ${m.method}` } });
@@ -114,6 +114,8 @@ module.exports = async (req, res) => {
     return;
   }
   const caller = callerOf(label, req);
+  // 사용 기록의 경로 구분: 중계 서버 키로 들어온 호출은 업무 에이전트, 그 밖(계정 커넥터 게이트키)은 계정
+  const channel = RELAY_LABELS.includes(label) ? "agent" : "account";
 
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST, OPTIONS");
@@ -140,7 +142,7 @@ module.exports = async (req, res) => {
   const msgs = Array.isArray(body) ? body : [body];
   const hasRequest = msgs.some(m => m && m.id !== undefined);
   if (!hasRequest) {
-    await Promise.all(msgs.map(m => handleMessage(m, caller)));
+    await Promise.all(msgs.map(m => handleMessage(m, caller, channel)));
     res.statusCode = 202; res.end(); return;
   }
 
@@ -155,7 +157,7 @@ module.exports = async (req, res) => {
     if (res.flushHeaders) res.flushHeaders();
     const ka = setInterval(() => { try { res.write(": keepalive\n\n"); } catch (e) {} }, 10000);
     try {
-      const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller)))).filter(Boolean);
+      const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller, channel)))).filter(Boolean);
       const payload = Array.isArray(body) ? outs : outs[0];
       res.write(`event: message\ndata: ${JSON.stringify(payload)}\n\n`);
     } finally {
@@ -165,6 +167,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller)))).filter(Boolean);
+  const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller, channel)))).filter(Boolean);
   sendJson(res, 200, Array.isArray(body) ? outs : outs[0]);
 };
