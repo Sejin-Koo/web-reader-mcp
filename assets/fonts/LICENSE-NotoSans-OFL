@@ -1,0 +1,5 @@
+Noto Sans JP / Noto Sans KR (Regular 400)
+Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+Licensed under the SIL Open Font License, Version 1.1 — https://openfontlicense.org
+파일 출처: npm @expo-google-fonts/noto-sans-jp·noto-sans-kr 0.4.4(구글 폰트 배포본을 그대로 담은 패키지).
+용도: PDF 쪽 그림(pdf_pages)에서 PDF에 글꼴이 들어 있지 않은 일본어·한국어 글자를 그리기 위함.

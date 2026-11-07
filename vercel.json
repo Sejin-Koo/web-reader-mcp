@@ -5,7 +5,7 @@
   "functions": {
     "api/mcp.js": {
       "maxDuration": 120,
-      "includeFiles": "assets/cmaps/**"
+      "includeFiles": "assets/**"
     }
   }
 }
