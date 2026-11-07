@@ -83,9 +83,15 @@ function grid(xs, ys, skipH) {
   ok(r.tableCheck.ok === 1 && /\|  \| FY2026 \| FY2025 \|/.test(r.text) && /\| Orders \| 27,902 \| 24,719 \|/.test(r.text), "항목 열 세로선 없는 표 복원 + 머리글 행");
 
   // 7) 한 글자 조각에 값 둘이 붙은 칸("17.3% 14.9%") — 숨은 열로 보고 확인 필요
-  const p7 = grid([50, 200, 400], [700, 680, 660]).concat([T(55, 686, "Item"), T(205, 686, "Value"), T(55, 666, "Margin"), T(205, 666, "17.3%  14.9%")]);
+  const p7 = grid([50, 200, 400], [700, 680, 660, 640]).concat([T(55, 686, "Item"), T(205, 686, "Value"), T(55, 666, "Margin"), T(205, 666, "17.3%  14.9%"), T(55, 646, "Orders"), T(205, 646, "27,902  24,719")]);
   r = await docs.fileToText(makePdf([p7]));
   ok(r.tableCheck.ok === 0 && r.tableCheck.failed.length === 1, "한 칸에 값 둘이 붙은 표는 확인 필요");
+
+  // 7-1) 값이 거의 없는 글상자(칸 모양 이상) — 확인 필요 없이 일반 글
+  const p71 = ["0.5 w", L(50, 700, 400, 700), L(50, 640, 400, 640), L(50, 700, 50, 640), L(400, 700, 400, 640), L(200, 700, 200, 670), L(50, 670, 200, 670)]
+    .concat([T(55, 686, "Notice"), T(205, 686, "Event opens in May"), T(55, 650, "Contact the office for details")]);
+  r = await docs.fileToText(makePdf([p71]));
+  ok(r.tableCheck.failed.length === 0 && !r.text.includes("[표 확인 필요") && /Contact the office/.test(r.text), "값 없는 글상자는 확인 필요 없이 일반 글");
 
   // 8) 밑줄형 표(칸마다 밑줄만, 세로선 없음) — 밑줄 틈을 열 경계로
   const ul = (y) => [L(50, y, 150, y), L(155, y, 250, y), L(255, y, 350, y)];

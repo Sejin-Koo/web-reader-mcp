@@ -5,7 +5,7 @@
   "functions": {
     "api/mcp.js": {
       "maxDuration": 120,
-      "includeFiles": "assets/cmaps/**"
+      "includeFiles": "{assets/**,node_modules/unpdf/dist/**,node_modules/tesseract.js-core/**,node_modules/tesseract.js/src/**}"
     }
   }
 }
