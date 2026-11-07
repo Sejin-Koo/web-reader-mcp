@@ -110,7 +110,7 @@ const para = "본문 문장입니다. 이 문장은 충분히 길게 반복됩�
   ok(r.isError && /구형 오피스|읽지 못/.test(r.content[0].text), "구형 doc·xls는 사유를 밝혀 실패");
 
   // 13) 1열 배치용 표는 문단으로 풀림
-  const lt = html._test.nodeText(require("linkedom").parseHTML(`<html><body><table><tr><td><p>위 문단</p><p>아래 문단</p></td></tr><tr><td>둘째 칸</td></tr></table></body></html>`).document.body);
+  const lt = html._test.nodeText((await html.libs()).parseHTML(`<html><body><table><tr><td><p>위 문단</p><p>아래 문단</p></td></tr><tr><td>둘째 칸</td></tr></table></body></html>`).document.body);
   ok(lt.includes("위 문단") && !lt.includes("| ---"), "1열 배치용 표는 마크다운 표로 만들지 않음");
 
   console.log(`통과 ${pass} / 실패 ${fail}`); process.exit(fail ? 1 : 0);
