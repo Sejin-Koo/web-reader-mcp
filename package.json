@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mozilla/readability": "0.6.0",
+    "@napi-rs/canvas": "0.1.80",
     "cfb": "1.2.2",
     "jszip": "3.10.1",
     "linkedom": "0.18.15",
