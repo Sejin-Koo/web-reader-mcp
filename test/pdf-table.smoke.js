@@ -68,7 +68,26 @@ function grid(xs, ys, skipH) {
   r = await docs.fileToText(makePdf([p4]));
   ok(r.tableCheck.borderless.length >= 1 && r.text.includes("테두리 없는 표"), "테두리 없는 숫자 표 → 표 확인 필요로 표시");
 
-  // 5) 쪽 그림
+  // 5) 점선 칸 구분(점 조각 수백 개) — 점선을 선으로 이어 행을 나눈다
+  const dots = (x1, x2, y) => { const o = []; for (let x = x1; x < x2; x += 1.2) o.push(`${x.toFixed(2)} ${y} m ${(x + 0.5).toFixed(2)} ${y} l S`); return o; };
+  const p5 = ["0.5 w", L(50, 700, 400, 700), L(50, 680, 400, 680), L(50, 620, 400, 620), L(50, 700, 50, 620), L(150, 700, 150, 620), L(400, 700, 400, 620)]
+    .concat(dots(50, 400, 660), dots(50, 400, 640))
+    .concat([T(55, 686, "Time"), T(155, 686, "Program"), T(55, 666, "Opening"), T(155, 666, "Live"), T(55, 646, "Group talk"), T(155, 646, "Closed"), T(55, 626, "Closing"), T(155, 626, "Live")]);
+  r = await docs.fileToText(makePdf([p5]));
+  ok(r.tableCheck.ok === 1 && /\| Group talk \| Closed \|/.test(r.text) && /\| Closing \| Live \|/.test(r.text), "점선 칸 구분을 선으로 이어 행 분리");
+
+  // 6) 항목 열에 세로선이 없는 표(가로선만 넓음) + 윗선과 머리글 줄 — 항목 열을 만들어 복원하고 머리글을 붙인다
+  const p6 = ["0.5 w", L(50, 720, 450, 720), L(50, 690, 450, 690), L(50, 670, 450, 670), L(50, 650, 450, 650), L(250, 700, 250, 650), L(350, 700, 350, 650)]
+    .concat([T(260, 695, "FY2026"), T(360, 695, "FY2025"), T(55, 676, "Orders"), T(260, 676, "27,902"), T(360, 676, "24,719"), T(55, 656, "Revenue"), T(260, 656, "20,794"), T(360, 656, "19,377")]);
+  r = await docs.fileToText(makePdf([p6]));
+  ok(r.tableCheck.ok === 1 && /\|  \| FY2026 \| FY2025 \|/.test(r.text) && /\| Orders \| 27,902 \| 24,719 \|/.test(r.text), "항목 열 세로선 없는 표 복원 + 머리글 행");
+
+  // 7) 한 글자 조각에 값 둘이 붙은 칸("17.3% 14.9%") — 숨은 열로 보고 확인 필요
+  const p7 = grid([50, 200, 400], [700, 680, 660]).concat([T(55, 686, "Item"), T(205, 686, "Value"), T(55, 666, "Margin"), T(205, 666, "17.3%  14.9%")]);
+  r = await docs.fileToText(makePdf([p7]));
+  ok(r.tableCheck.ok === 0 && r.tableCheck.failed.length === 1, "한 칸에 값 둘이 붙은 표는 확인 필요");
+
+  // 8) 쪽 그림
   const img = await docs.renderPdfPages(makePdf([p1, p4]), [2, 9]);
   ok(img.total === 2 && img.images[0].png && img.images[0].png.subarray(1, 4).toString() === "PNG" && img.images[1].error, "pdf_pages: 쪽 그림(PNG)과 범위 밖 쪽 안내");
 
