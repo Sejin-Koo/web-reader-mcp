@@ -12,6 +12,7 @@
 //   헤더를 믿는 키 식별자는 TRUSTED_RELAY_LABELS(쉼표 구분, 기본 "relay")로 정한다.
 
 const web = require("../lib/web");
+const vendor = require("../lib/vendor");
 
 const SERVER_INFO = { name: "web-reader-mcp", version: "1.0.0" };
 // @modelcontextprotocol/sdk 1.32.1 의 SUPPORTED_PROTOCOL_VERSIONS 와 같은 값으로 맞춘다
@@ -21,6 +22,8 @@ const LATEST = SUPPORTED[0];
 const GATE_KEYS = (process.env.MCP_GATE_KEYS || "").split(",").map(s => s.trim()).filter(Boolean);
 const GATE_MODE = (process.env.MCP_GATE_MODE || "observe").trim().toLowerCase();
 const RELAY_LABELS = (process.env.TRUSTED_RELAY_LABELS || "relay").split(",").map(s => s.trim()).filter(Boolean);
+// 관리자 전용 도구(web_vendor_usage)를 보이고 부를 수 있는 키 식별자. 중계 서버는 relay_usage(관리자 전용)에서만 이 도구를 부른다.
+const ADMIN_LABELS = (process.env.WEB_ADMIN_LABELS || "koo,relay").split(",").map(s => s.trim()).filter(Boolean);
 
 function keyLabel(k) {
   if (!k) return "(none)";
@@ -34,8 +37,12 @@ function callerOf(label, req) {
   return h || label;
 }
 
-async function callTool(params, caller, channel) {
+async function callTool(params, caller, channel, label) {
   const name = params && params.name;
+  if (name === vendor.TOOL.name && ADMIN_LABELS.includes(label)) {
+    try { return { result: await vendor.report() }; }
+    catch (e) { return { result: { isError: true, content: [{ type: "text", text: `사용량 조회 오류: ${e.message}` }] } }; }
+  }
   if (!web.NAMES.includes(name)) {
     return { error: { code: -32602, message: `Unknown tool: ${name}` } };
   }
@@ -50,7 +57,7 @@ async function callTool(params, caller, channel) {
   }
 }
 
-async function handleMessage(m, caller, channel) {
+async function handleMessage(m, caller, channel, label) {
   const isNotification = m && m.id === undefined;
   const reply = (body) => (isNotification ? null : Object.assign({ jsonrpc: "2.0", id: m.id }, body));
   if (!m || m.jsonrpc !== "2.0" || typeof m.method !== "string") {
@@ -69,9 +76,9 @@ async function handleMessage(m, caller, channel) {
     case "ping":
       return reply({ result: {} });
     case "tools/list":
-      return reply({ result: { tools: web.TOOLS } });
+      return reply({ result: { tools: ADMIN_LABELS.includes(label) ? web.TOOLS.concat([vendor.TOOL]) : web.TOOLS } });
     case "tools/call":
-      return reply(await callTool(m.params, caller, channel));
+      return reply(await callTool(m.params, caller, channel, label));
     default:
       if (isNotification) return null;
       return reply({ error: { code: -32601, message: `Method not found: ${m.method}` } });
@@ -142,7 +149,7 @@ module.exports = async (req, res) => {
   const msgs = Array.isArray(body) ? body : [body];
   const hasRequest = msgs.some(m => m && m.id !== undefined);
   if (!hasRequest) {
-    await Promise.all(msgs.map(m => handleMessage(m, caller, channel)));
+    await Promise.all(msgs.map(m => handleMessage(m, caller, channel, label)));
     res.statusCode = 202; res.end(); return;
   }
 
@@ -157,7 +164,7 @@ module.exports = async (req, res) => {
     if (res.flushHeaders) res.flushHeaders();
     const ka = setInterval(() => { try { res.write(": keepalive\n\n"); } catch (e) {} }, 10000);
     try {
-      const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller, channel)))).filter(Boolean);
+      const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller, channel, label)))).filter(Boolean);
       const payload = Array.isArray(body) ? outs : outs[0];
       res.write(`event: message\ndata: ${JSON.stringify(payload)}\n\n`);
     } finally {
@@ -167,6 +174,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller, channel)))).filter(Boolean);
+  const outs = (await Promise.all(msgs.map(m => handleMessage(m, caller, channel, label)))).filter(Boolean);
   sendJson(res, 200, Array.isArray(body) ? outs : outs[0]);
 };

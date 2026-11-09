@@ -29,6 +29,8 @@
 | `WEB_SEARCH_DAILY`, `WEB_PAID_FETCH_DAILY`, `NIMBLE_MONTHLY_MAX` | 돈이 드는 경로의 한도(기본 사람별 하루 검색 60·대체 읽기 40, 서버 전체 월 Nimble 5000) |
 | `WEB_REPEAT_MAX`, `WEB_REPEAT_WINDOW_SEC` | 같은 주소·같은 위치 반복 허용(기본 10분에 5회) — 직접 읽기·HWP 읽기는 횟수로 세지 않고 이것만 본다 |
 | `WEB_BURST_PER_MIN`, `WEB_BURST_EXEMPT` | 사람별 1분 호출 상한(기본 60)과 제외 키 식별자(기본 `koo`) |
+| `WEB_ADMIN_LABELS` | 관리자 전용 도구 `web_vendor_usage`를 보고 부를 수 있는 키 식별자(기본 `koo,relay`) |
+| `NIMBLE_KEY_ID`, `NIMBLE_PERSONAL_KEY_ID` | Nimble 사용량의 키 id(32자리 소문자 16진수 — 키 자체가 아님). 이 서버 전용 키와 사용자 본인 키를 구분해 표시. 없으면 전용 키는 서버 월 카운터로 추정 |
 | `WEB_DAILY_EXEMPT` | 사람별 하루 한도(검색·대체 읽기)를 적용하지 않는 키 식별자(기본 `koo`). 횟수는 그대로 세고, 서버 전체 월 Nimble 한도는 똑같이 적용된다 |
 
 ## 경로별 사용 기록 (2026-11-07)
@@ -39,6 +41,14 @@
 - 보관: `WEB_USAGE_RETENTION_DAYS`(기본 90일)
 - 조회: 업무 에이전트 중계 서버의 관리자 도구 `relay_usage`(group_by `web_paths`) — 같은 저장소를 읽는다
 - Nimble 브라우저 렌더 재시도(본문이 얇아 한 번 더)는 외부 요청 2건으로 센다(Nimble 과금 단위와 같음). 유료 본문 캐시로 답한 호출은 외부 요청으로 세지 않는다
+
+## 회사 측 사용량 (2026-11-09, 관리자 전용 도구 `web_vendor_usage`)
+
+이 서버 기록에는 계정 채팅에서 Tavily·Nimble 커넥터를 직접 부른 사용량이 없다(각 회사 서버로 바로 가므로). 그래서 회사가 집계한 이번 달 사용량을 불러와 나눠 보인다.
+
+- Tavily `GET /usage`(전용 키): 계정 전체(플랜+종량제) 크레딧, 전용 키 크레딧, 그 차이(커넥터 직접 호출 등). 단위는 크레딧
+- Nimble `GET /v2/usage?group_by=api_key`(이번 달 UTC): 계정 전체 요청을 전용 키·본인 키·키 없는 요청(커넥터·대시보드)·그 밖으로. 무료 제공 월 5,000은 계정 전체 기준이다(이 서버의 `NIMBLE_MONTHLY_MAX`는 전용 키 몫만 센다)
+- 함께 이 서버 경로별 호출(이번 달 한국시간)을 붙인다. 도구 목록에는 `WEB_ADMIN_LABELS` 키에만 나온다. 중계 서버는 `relay_usage`(group_by `web_vendor`)에서만 부른다
 
 ## 2026-11-07 검색·읽기 보강 (search-upgrades)
 - `web_search`: `start_date`·`end_date`(YYYY-MM-DD, Tavily 기간 필터 + 결과 게시일로 사후 점검 — 게시일 없는 결과는 남기고 안내), `exact_phrase`(최대 3개, Tavily `exact_match`, Nimble 결과는 제목·요약에 문구가 있는지 사후 점검). Tavily 결과에 게시일(`include_published_date`)을 항상 받는다.
