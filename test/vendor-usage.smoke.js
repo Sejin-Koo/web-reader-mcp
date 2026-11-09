@@ -26,8 +26,10 @@ let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(
   ok(s.nimble.server === 7 && s.nimble.server_key_guessed, "키 id 미설정이면 월 카운터(6)에 가장 가까운 키를 추정");
   ok(s.nimble.keyless === 80, "키 없는 요청 80");
   ok(/group_by=api_key/.test(nimbleUrl) && /start=2026-\d\d-01T00/.test(decodeURIComponent(nimbleUrl)), "Nimble 이번 달·키별 조회");
+  ok(s.rows.length === 7 && s.rows[2]["사용량"] === 28 && s.rows[2]["비중"] === 0.7, "표 행 7개, Tavily 전용 키 외 28·비중 0.7");
   process.env.NIMBLE_KEY_ID = "bbbb"; process.env.NIMBLE_PERSONAL_KEY_ID = "aaaa";
   r = await vendor.report(); s = r.structuredContent;
   ok(s.nimble.server === 30 && !s.nimble.server_key_guessed && s.nimble.personal === 7, "환경변수로 키 지정");
+  ok(s.rows.some(r => r["구분"].startsWith("사용자 본인 키") && r["사용량"] === 7), "본인 키 행");
   console.log(`통과 ${pass} / 실패 ${fail}`); process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
