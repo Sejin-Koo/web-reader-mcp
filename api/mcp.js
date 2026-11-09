@@ -40,7 +40,7 @@ function callerOf(label, req) {
 async function callTool(params, caller, channel, label) {
   const name = params && params.name;
   if (name === vendor.TOOL.name && ADMIN_LABELS.includes(label)) {
-    try { return { result: await vendor.report() }; }
+    try { return { result: await vendor.report((params && params.arguments) || {}) }; }
     catch (e) { return { result: { isError: true, content: [{ type: "text", text: `사용량 조회 오류: ${e.message}` }] } }; }
   }
   if (!web.NAMES.includes(name)) {

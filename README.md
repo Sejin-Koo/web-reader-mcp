@@ -49,6 +49,8 @@
 - Tavily `GET /usage`(전용 키): 계정 전체(플랜+종량제) 크레딧, 전용 키 크레딧, 그 차이(커넥터 직접 호출 등). 단위는 크레딧
 - Nimble `GET /v2/usage?group_by=api_key`(이번 달 UTC): 계정 전체 요청을 전용 키·본인 키·키 없는 요청(커넥터·대시보드)·그 밖으로. 무료 제공 월 5,000은 계정 전체 기준이다(이 서버의 `NIMBLE_MONTHLY_MAX`는 전용 키 몫만 센다)
 - 함께 이 서버 경로별 호출(이번 달 한국시간)을 붙인다. 도구 목록에는 `WEB_ADMIN_LABELS` 키에만 나온다. 중계 서버는 `relay_usage`(group_by `web_vendor`)에서만 부른다
+- `view`: `current`(기본 — 이번 달 합계·출처별), `daily`(지난달 1일부터 날짜별 — Nimble은 회사 일별 집계, Tavily는 저장한 누적값의 전날 대비 차), `monthly`(월별 — Tavily는 그 달 마지막 저장값, Nimble은 회사 월 합계)
+- 일별 저장: Tavily는 청구 주기 누적값만 주므로 날마다 누적값을 `wv:<YYYY-MM>` 해시(필드 = 한국시간 날짜)에 저장한다. Vercel 예약 실행 `api/vendor-snapshot`(vercel.json crons, 매일 UTC 14:10 = 한국시간 23시대)과 `web_vendor_usage` current 조회 때마다 저장(같은 날은 덮어씀). 보관 `WEB_VENDOR_SNAPSHOT_DAYS`(기본 400일). 저장 시작 전 날짜·달의 Tavily 값은 없다
 
 ## 2026-11-07 검색·읽기 보강 (search-upgrades)
 - `web_search`: `start_date`·`end_date`(YYYY-MM-DD, Tavily 기간 필터 + 결과 게시일로 사후 점검 — 게시일 없는 결과는 남기고 안내), `exact_phrase`(최대 3개, Tavily `exact_match`, Nimble 결과는 제목·요약에 문구가 있는지 사후 점검). Tavily 결과에 게시일(`include_published_date`)을 항상 받는다.
