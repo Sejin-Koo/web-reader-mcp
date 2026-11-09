@@ -26,6 +26,12 @@ let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(
   ok(s.nimble.server === 7 && s.nimble.server_key_guessed, "키 id 미설정이면 월 카운터(6)에 가장 가까운 키를 추정");
   ok(s.nimble.keyless === 80, "키 없는 요청 80");
   ok(/group_by=api_key/.test(nimbleUrl) && /start=2026-\d\d-01T00/.test(decodeURIComponent(nimbleUrl)), "Nimble 이번 달·키별 조회");
+  ok(s.summary.length === 2 && s.summary[1]["무료 제공"] === 5000 && s.summary[0]["이번 달 사용"] === 40, "요약 2행(무료 제공 Nimble 5,000)");
+  const src = s.sources, tot = src[src.length - 1];
+  const sumT = src.slice(0, -1).reduce((a, r) => a + (r.Tavily || 0), 0), sumN = src.slice(0, -1).reduce((a, r) => a + (r.Nimble || 0), 0);
+  console.log(src.map(r => `${r["경로"]} | ${r["사용자"]} | ${r.Tavily} | ${r.Nimble}`).join("\n"));
+  ok(sumT === tot.Tavily && sumN === tot.Nimble, `출처별 합 = 계정 전체 (Tavily ${sumT}/${tot.Tavily}, Nimble ${sumN}/${tot.Nimble})`);
+  ok(src.some(r => r["경로"] === "업무 에이전트" && r["사용자"] === "kim" && r.Tavily === 6), "업무 에이전트 사용자별 행");
   ok(s.rows.length === 7 && s.rows[2]["사용량"] === 28 && s.rows[2]["비중"] === 0.7, "표 행 7개, Tavily 전용 키 외 28·비중 0.7");
   process.env.NIMBLE_KEY_ID = "bbbb"; process.env.NIMBLE_PERSONAL_KEY_ID = "aaaa";
   r = await vendor.report(); s = r.structuredContent;
