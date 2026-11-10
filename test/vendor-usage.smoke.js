@@ -10,6 +10,8 @@ global.fetch = async (u) => {
   u = String(u);
   if (u.includes("tavily")) return new Response(JSON.stringify({ key: { usage: 12, limit: null, search_usage: 9, extract_usage: 3 }, account: { current_plan: "Researcher", plan_usage: 40, plan_limit: 1000, paygo_usage: 0, paygo_limit: 1000 } }), { status: 200 });
   nimbleUrl = u; nimbleUrls.push(u);
+  if (/granularity=month/.test(u)) { const d = new Date(); const pm = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 1)).toISOString(); const cm = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString();
+    return new Response(JSON.stringify({ data: [{ timestamp: pm, dimensions: {}, metrics: { requests: 500 } }, { timestamp: cm, dimensions: {}, metrics: { requests: 9999 } }], totals: {}, meta: { start: "2025-12-01T00:00:00Z" } }), { status: 200 }); }
   return new Response(JSON.stringify({ data: [
     { dimensions: { api_key: null }, metrics: { requests: 80, errors: 1, cost_usd: "0.01" } },
     { dimensions: { api_key: "aaaa" }, metrics: { requests: 7, errors: 0, cost_usd: "0.01" } },
@@ -28,8 +30,8 @@ let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(
   ok(nimbleUrls.some(x => /group_by=api_key/.test(x) && /start=2026-\d\d-01T00/.test(decodeURIComponent(x))), "Nimble 이번 달·키별 조회");
   ok(nimbleUrls.some(x => /granularity=month/.test(x) && /group_by=time/.test(x)), "Nimble 누적(월별) 조회");
   ok(s.summary.length === 2 && s.summary[1]["무료 제공"] === 5000 && s.summary[0]["이번 달 사용"] === 40, "요약 2행(무료 제공 Nimble 5,000)");
-  ok(s.summary[1]["무료 방식"] === "누적" && s.summary[1]["누적 사용"] === 117 && s.summary[0]["무료 방식"] === "매월", `Nimble 누적·Tavily 매월 (${s.summary[1]["무료 방식"]} ${s.summary[1]["누적 사용"]})`);
-  ok(s.summary[1]["월말 누적 추정"] === 117 - 117 + s.summary[1]["월말 추정"], "월말 누적 추정 = 누적 − 이번 달 + 이번 달 월말 추정");
+  ok(s.summary[1]["무료 방식"] === "누적" && s.summary[1]["누적 사용"] === 617 && s.summary[0]["무료 방식"] === "매월", `Nimble 누적·Tavily 매월 (${s.summary[1]["무료 방식"]} ${s.summary[1]["누적 사용"]})`);
+  ok(s.summary[1]["월말 누적 추정"] === 500 + s.summary[1]["월말 추정"], "누적 = 지난달까지 월별 합 + 이번 달 키별 합(월별의 이번 달 행은 무시), 월말 누적 추정 = 지난달까지 + 이번 달 월말 추정");
   const src = s.sources, tot = src[src.length - 1];
   const sumT = src.slice(0, -1).reduce((a, r) => a + (r.Tavily || 0), 0), sumN = src.slice(0, -1).reduce((a, r) => a + (r.Nimble || 0), 0);
   console.log(src.map(r => `${r["경로"]} | ${r["사용자"]} | ${r.Tavily} | ${r.Nimble}`).join("\n"));
