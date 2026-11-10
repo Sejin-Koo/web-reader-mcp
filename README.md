@@ -47,7 +47,7 @@
 이 서버 기록에는 계정 채팅에서 Tavily·Nimble 커넥터를 직접 부른 사용량이 없다(각 회사 서버로 바로 가므로). 그래서 회사가 집계한 이번 달 사용량을 불러와 나눠 보인다.
 
 - Tavily `GET /usage`(전용 키): 계정 전체(플랜+종량제) 크레딧, 전용 키 크레딧, 그 차이(커넥터 직접 호출 등). 단위는 크레딧
-- Nimble `GET /v2/usage?group_by=api_key`(이번 달 UTC): 계정 전체 요청을 전용 키·본인 키·키 없는 요청(커넥터·대시보드)·그 밖으로. 무료 제공 월 5,000은 계정 전체 기준이다(이 서버의 `NIMBLE_MONTHLY_MAX`는 전용 키 몫만 센다)
+- Nimble `GET /v2/usage?group_by=api_key`(이번 달 UTC): 계정 전체 요청을 전용 키·본인 키·키 없는 요청(커넥터·대시보드)·그 밖으로. 무료 제공 5,000은 계정 전체 기준이고 **매월 초기화가 아니라 처음 한 번 주는 체험분(누적)으로 본다**(2026-11-10 — Nimble 문서 Pricing은 "Get started with 5,000 free web pages", 마케팅 가격 페이지만 "per month"로 적어 엇갈려 보수적으로). 요약의 '누적 사용'은 `/v2/usage?group_by=time&granularity=month`로 받은 최근 12개월 합이고 사용률·과금 사용·'월말 누적 추정'(누적 − 이번 달 + 이번 달 월말 추정)을 이것으로 낸다. `NIMBLE_FREE_MODE=monthly`면 이번 달 기준. Tavily 무료 1,000크레딧은 매월 새로 주어진다(Tavily 문서 Credits & Pricing "1,000 free API Credits every month"). 이 서버의 `NIMBLE_MONTHLY_MAX`는 전용 키 몫만 센다
 - 함께 이 서버 경로별 호출(이번 달 한국시간)을 붙인다. 도구 목록에는 `WEB_ADMIN_LABELS` 키에만 나온다. 중계 서버는 `relay_usage`(group_by `web_vendor`)에서만 부른다
 - `view`: `current`(기본 — 이번 달 합계·출처별), `daily`(지난달 1일부터 날짜별 — Nimble은 회사 일별 집계, Tavily는 저장한 누적값의 전날 대비 차), `monthly`(월별 — Tavily는 그 달 마지막 저장값, Nimble은 회사 월 합계)
 - 일별 저장: Tavily는 청구 주기 누적값만 주므로 날마다 누적값을 `wv:<YYYY-MM>` 해시(필드 = 한국시간 날짜)에 저장한다. Vercel 예약 실행 `api/vendor-snapshot`(vercel.json crons, 매일 UTC 14:10 = 한국시간 23시대)과 `web_vendor_usage` current 조회 때마다 저장(같은 날은 덮어씀). 보관 `WEB_VENDOR_SNAPSHOT_DAYS`(기본 400일). 저장 시작 전 날짜·달의 Tavily 값은 없다
