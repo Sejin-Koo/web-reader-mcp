@@ -52,6 +52,15 @@ const before = (t, a, b) => t.indexOf(a) >= 0 && t.indexOf(b) >= 0 && t.indexOf(
   const t3 = await read(ops3);
   ok(/Item0 revenue line[^\n]*1234/.test(t3), "숫자 표는 항목과 값이 같은 줄에 남음(두 단 아님)");
 
+  // 4) 낱말마다 조각이 따로 있는 한 단 문서(줄 길이가 들쭉날쭉) — 낱말 사이 빈칸을 단 사이로 보지 않음
+  const ops4 = [];
+  for (let i = 0; i < 24; i++) {
+    const n = 4 + ((i * 7) % 9); let x = 50;
+    for (let k = 0; k < n; k++) { ops4.push(T(x, 780 - i * 14, `w${i}x${k}`)); x += 26 + ((i + k) % 3) * 4 + 6; }
+  }
+  const t4 = await read(ops4);
+  ok(/w0x0 w0x1 w0x2/.test(t4) && before(t4, "w3x0", "w4x0") && !/두 단/.test(t4), "낱말 조각 한 단 문서는 두 단으로 보지 않음");
+
   console.log(`통과 ${pass} / 실패 ${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
