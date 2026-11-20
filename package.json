@@ -15,6 +15,7 @@
     "linkedom": "0.18.15",
     "parse5": "7.3.0",
     "tesseract.js": "7.0.0",
+    "undici": "6.21.3",
     "unpdf": "2.1.0"
   }
 }
