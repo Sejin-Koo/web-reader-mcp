@@ -39,7 +39,11 @@ let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log(
   r = await web.call("fetch_page", { url: stale, direct_only: true }, "koo");
   ok(!r.isError && text(r).includes("첨부 본문 확인용"), "referer 없어도 그누보드 글 보기에서 새 주소를 찾음");
   const T = web._test.freshAttachUrl;
-  ok(T(new URL("https://a.kr/dl?id=1"), `<a href="/dl?id=1&nonce=x">`, "https://a.kr/v") === null, "일회용 값이 없는 주소는 바꾸지 않음");
+  r = await web.call("fetch_page", { url: "https://s.example.or.kr/bbs/download.php?bo_table=02sub03&wr_id=346&no=1", direct_only: true }, "koo");
+  ok(!r.isError && text(r).includes("첨부 본문 확인용"), "nonce를 뗀 주소 → 글 보기의 같은 첨부(nonce 붙은) 주소로 받음");
+  ok(T(new URL("https://a.kr/dl?id=1"), `<a href="/dl?id=1&nonce=x">`, "https://a.kr/v") === "https://a.kr/dl?id=1&nonce=x", "일회용 값이 빠진 주소는 그 값이 붙은 같은 첨부를 고름");
+  ok(T(new URL("https://a.kr/dl?id=1"), `<a href="/dl?id=1&x=2&nonce=x">`, "https://a.kr/v") === null, "다른 질의가 더 붙은 링크는 고르지 않음");
+  ok(T(new URL("https://a.kr/dl?id=1"), `<a href="/dl?id=1">`, "https://a.kr/v") === null, "일회용 값이 없는 같은 주소는 바꾸지 않음");
   ok(T(new URL("https://a.kr/dl?id=1&nonce=a"), `<a href="/dl?id=2&nonce=b">`, "https://a.kr/v") === null, "다른 첨부(id 다름)는 고르지 않음");
   ok(T(new URL("https://a.kr/dl?id=1&nonce=a"), `<a href="https://b.kr/dl?id=1&nonce=b">`, "https://a.kr/v") === null, "다른 사이트 주소는 고르지 않음");
   console.log(`\n통과 ${pass} / 실패 ${fail}`); process.exit(fail ? 1 : 0);
